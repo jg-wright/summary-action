@@ -1,31 +1,52 @@
-# I haven't yet been able to test the output of job summary. But for now it can be done manually.
-
 name: Pull Request
 
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    env:
+      EXPECTED: | # markdown
+        # H1
+
+        paragraph
+
+        - item 1
+        - item 2
+        - item 3
+
+        | Heading 1 | Heading 2 |
+        | --- | --- |
+        | col1 | col2 |
+        | col1 | col2 |
+
+        Shell syntax must be written literally: $HOME `whoami` $(whoami)
+        EOF
+        Text after an EOF line must not be dropped
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Create summary
-        uses: ./
+      - uses: actions/checkout@v7
         with:
-          summary: | # markdown
-            # H1
+          persist-credentials: false
 
-            paragraph
+      - uses: ./
+        with:
+          summary: ${{ env.EXPECTED }}
 
-            - item 1
-            - item 2
-            - item 3
-
-            | Heading 1 | Heading 2 |
-            | --- | --- |
-            | col1 | col2 |
-            | col1 | col2 |
+      # The runner gives each step its own summary file under
+      # $RUNNER_TEMP/_runner_file_commands (an undocumented location). Only the
+      # action's step writes anything, so concatenating them all yields its output.
+      - name: Assert summary
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=("$RUNNER_TEMP"/_runner_file_commands/step_summary_*)
+          if (( ${#files[@]} == 0 )); then
+            echo "::error::No step summary files found in $RUNNER_TEMP/_runner_file_commands"
+            exit 1
+          fi
+          diff -u <(printf '%s\n' "$EXPECTED") <(cat "${files[@]}")
