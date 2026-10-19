@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   github:
     name: GitHub Release
@@ -26,5 +29,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
-          extra_plugins: |
-            @semantic-release/git
+          extra_plugins: "@semantic-release/git"
