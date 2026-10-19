@@ -44,7 +44,7 @@ jobs:
       # matches exactly.
       - name: Assert summary
         shell: bash
-        run: |
+        run: | # shell
           shopt -s nullglob
           files=("$RUNNER_TEMP"/_runner_file_commands/step_summary_*)
           if (( ${#files[@]} == 0 )); then
