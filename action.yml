@@ -15,7 +15,6 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: | # shell
-        cat << EOF >> $GITHUB_STEP_SUMMARY
-        ${{ inputs.summary }}
-        EOF
+      env:
+        SUMMARY: ${{ inputs.summary }}
+      run: printf '%s\n' "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
