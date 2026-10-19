@@ -38,8 +38,10 @@ jobs:
           summary: ${{ env.EXPECTED }}
 
       # The runner gives each step its own summary file under
-      # $RUNNER_TEMP/_runner_file_commands (an undocumented location). Only the
-      # action's step writes anything, so concatenating them all yields its output.
+      # $RUNNER_TEMP/_runner_file_commands (an undocumented location). A composite
+      # action's inner step gets one too, and its content is also copied to the
+      # outer step's file, so the output appears more than once: pass if any file
+      # matches exactly.
       - name: Assert summary
         shell: bash
         run: |
@@ -49,4 +51,11 @@ jobs:
             echo "::error::No step summary files found in $RUNNER_TEMP/_runner_file_commands"
             exit 1
           fi
-          diff -u <(printf '%s\n' "$EXPECTED") <(cat "${files[@]}")
+          for file in "${files[@]}"; do
+            cmp -s <(printf '%s\n' "$EXPECTED") "$file" && exit 0
+          done
+          echo "::error::No step summary file matched the expected summary"
+          for file in "${files[@]}"; do
+            [[ -s $file ]] && diff -u --label expected --label "$file" <(printf '%s\n' "$EXPECTED") "$file" || true
+          done
+          exit 1
